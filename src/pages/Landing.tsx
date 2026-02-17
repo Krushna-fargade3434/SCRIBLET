@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Hero } from '@/components/landing/Hero';
 import { Features } from '@/components/landing/Features';
+import { UseCases } from '@/components/landing/UseCases';
+import { FAQ } from '@/components/landing/FAQ';
 import { Footer } from '@/components/landing/Footer';
 
 export default function Landing() {
@@ -28,6 +30,8 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       <Hero />
       <Features />
+      <UseCases />
+      <FAQ />
       <Footer />
     </div>
   );

@@ -1,11 +1,16 @@
 {
-  "name": "Scriblet",
+  "name": "Scriblet - Your Secure Notes Platform",
   "short_name": "Scriblet",
+  "description": "A simple and secure note-taking app that works offline",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#111827",
+  "categories": ["productivity", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/logo.png",
@@ -19,5 +24,30 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Note",
+      "short_name": "New Note",
+      "description": "Create a new note",
+      "url": "/dashboard/new",
+      "icons": []
+    },
+    {
+      "name": "Favorites",
+      "short_name": "Favorites",
+      "description": "View favorite notes",
+      "url": "/dashboard/favorites",
+      "icons": []
+    }
+  ],
+  "share_target": {
+    "action": "/dashboard/new",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text"
+    }
+  }
 }

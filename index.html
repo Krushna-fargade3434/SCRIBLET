@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scriblet</title>
-    <meta name="description" content="Scriblet - Your Secure Notes Platform" />
+    <title>Scriblet - Your Secure Notes Platform</title>
+    <meta name="description" content="Scriblet - A simple and secure note-taking app that works offline. Create, edit, and manage your notes anywhere." />
     <meta name="author" content="Scriblet" />
+    <meta name="keywords" content="notes, note-taking, offline, PWA, productivity" />
 
     <!-- PWA / Home screen support -->
     <link rel="manifest" href="/site.webmanifest" />
@@ -15,19 +16,34 @@
     <meta name="application-name" content="Scriblet" />
     <meta name="apple-mobile-web-app-title" content="Scriblet" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <meta property="og:title" content="Scriblet" />
-    <meta property="og:description" content="Scriblet - Your Secure Notes Platform" />
+    <!-- Open Graph / Social Media -->
+    <meta property="og:title" content="Scriblet - Your Secure Notes Platform" />
+    <meta property="og:description" content="A simple and secure note-taking app that works offline" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/logo.png" />
+    <meta property="og:url" content="https://scriblet.app" />
 
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Scriblet" />
+    <meta name="twitter:title" content="Scriblet" />
+    <meta name="twitter:description" content="Your Secure Notes Platform - Works Offline" />
+    <meta name="twitter:image" content="/logo.png" />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <noscript>
+      <div style="padding: 40px; text-align: center; font-family: sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>Scriblet requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
+      </div>
+    </noscript>
   </body>
 </html>

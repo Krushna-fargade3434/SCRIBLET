@@ -14,8 +14,19 @@ import NewNote from "./pages/NewNote";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import OfflinePage from "./pages/OfflinePage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false,
+      networkMode: "offlineFirst",
+    },
+  },
+});
 
 const App = () => (
   <ErrorBoundary>
@@ -30,6 +41,7 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/home" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/offline" element={<OfflinePage />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/dashboard/new" element={<ProtectedRoute><NewNote /></ProtectedRoute>} />
               <Route path="/dashboard/note/:id" element={<ProtectedRoute><NewNote /></ProtectedRoute>} />

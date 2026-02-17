@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Search, FileText, Loader2, MoreVertical } from 'lucide-react';
+import { Plus, Search, FileText, Loader2, SlidersHorizontal, Grid3x3, List } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { NoteCard } from '@/components/dashboard/NoteCard';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -27,9 +28,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const filters = [
-    { id: 'all' as FilterType, label: 'All notes' },
-    { id: 'quick' as FilterType, label: 'Quick notes' },
-    { id: 'favorites' as FilterType, label: 'Favorites' },
+    { id: 'all' as FilterType, label: 'All notes', count: notes.length },
+    { id: 'quick' as FilterType, label: 'Quick notes', count: notes.filter(n => n.tags?.includes('quick') || !n.content || n.content.length < 100).length },
+    { id: 'favorites' as FilterType, label: 'Favorites', count: notes.filter(n => n.is_favorite).length },
   ];
 
   const filteredNotes = useMemo(() => {
@@ -79,49 +80,57 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <motion.div
-          className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between border-b border-border"
+          className="sticky top-0 z-20 backdrop-blur-lg bg-background/80 border-b border-border"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-3 flex-1 max-w-2xl">
-            <Search className="w-5 h-5 text-muted-foreground shrink-0" />
-            <Input
-              placeholder="Search notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="border-0 bg-transparent h-10 text-base px-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <MoreVertical className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>List view</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSortBy('created')}>
-                  Sort by time created
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSortBy('edited')}
-                  className={cn(sortBy === 'edited' && 'bg-accent text-accent-foreground')}
-                >
-                  Sort by time edited {sortBy === 'edited' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('title')}>
-                  Sort by title
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 max-w-2xl relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search notes by title, content, or tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-11 bg-muted/50 border-border focus-visible:ring-primary"
+                />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="shrink-0 h-11 w-11">
+                    <SlidersHorizontal className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('edited')}
+                    className={cn(sortBy === 'edited' && 'bg-accent text-accent-foreground')}
+                  >
+                    Recently edited {sortBy === 'edited' && '✓'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('created')}
+                    className={cn(sortBy === 'created' && 'bg-accent text-accent-foreground')}
+                  >
+                    Recently created {sortBy === 'created' && '✓'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSortBy('title')}
+                    className={cn(sortBy === 'title' && 'bg-accent text-accent-foreground')}
+                  >
+                    Title (A-Z) {sortBy === 'title' && '✓'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </motion.div>
 
         {/* Filter Chips */}
         <motion.div
-          className="px-4 sm:px-6 lg:px-8 py-4 flex gap-2 overflow-x-auto scrollbar-hide"
+          className="px-4 sm:px-6 lg:px-8 py-4 flex gap-2 overflow-x-auto scrollbar-hide bg-background"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -131,42 +140,65 @@ export default function Dashboard() {
               key={filter.id}
               onClick={() => setActiveFilter(filter.id)}
               className={cn(
-                'filter-chip',
-                activeFilter === filter.id ? 'filter-chip-active' : 'filter-chip-inactive'
+                'px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-2',
+                activeFilter === filter.id 
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'bg-card border border-border text-foreground hover:bg-muted'
               )}
             >
               {filter.label}
+              <span className={cn(
+                "px-2 py-0.5 rounded-full text-xs font-semibold",
+                activeFilter === filter.id 
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {filter.count}
+              </span>
             </button>
           ))}
         </motion.div>
 
         {/* Notes grid */}
-        <div className="px-4 sm:px-6 lg:px-8 pb-20">
+        <div className="px-4 sm:px-6 lg:px-8 pb-24 pt-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+              <p className="text-sm text-muted-foreground">Loading your notes...</p>
             </div>
           ) : filteredNotes.length === 0 ? (
             <motion.div
-              className="flex flex-col items-center justify-center py-20 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
             >
-              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-                <FileText className="w-8 h-8 text-muted-foreground" />
+              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <FileText className="w-10 h-10 text-primary" />
               </div>
-              <h2 className="font-display text-xl font-semibold text-foreground mb-2">
+              <h2 className="text-2xl font-semibold text-foreground mb-3">
                 {searchQuery ? 'No notes found' : activeFilter === 'favorites' ? 'No favorites yet' : 'No notes yet'}
               </h2>
-              <p className="text-muted-foreground mb-6 max-w-sm">
+              <p className="text-muted-foreground mb-8 leading-relaxed">
                 {searchQuery
-                  ? 'Try adjusting your search terms'
-                  : 'Create your first note to get started'}
+                  ? 'Try adjusting your search terms or filters'
+                  : activeFilter === 'favorites'
+                  ? 'Star your important notes to see them here'
+                  : 'Create your first note to get started on your journey'}
               </p>
+              {!searchQuery && (
+                <Button 
+                  onClick={() => navigate('/dashboard/new')}
+                  size="lg"
+                  className="shadow-lg"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Note
+                </Button>
+              )}
             </motion.div>
           ) : (
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}

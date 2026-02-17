@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Maximize2, Minimize2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Maximize2, Minimize2, Bold, Italic, List, ListOrdered, Heading1, Heading2, Code, Link, Check, FileEdit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,6 +32,12 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
   const [tags, setTags] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'draft' | 'saving' | 'saved'>('draft');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Calculate word and character count
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const charCount = content.length;
 
   useEffect(() => {
     if (note) {
@@ -39,13 +45,46 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
       setContent(cleanNoteContent(note.content || ''));
       setBgColor(note.bg_color);
       setTags(cleanTags(note.tags).join(', '));
+      setSaveStatus('saved');
     } else {
       setTitle('');
       setContent('');
       setBgColor('#ffffff');
       setTags('');
+      setSaveStatus('draft');
     }
   }, [note, open]);
+
+  // Mark as draft when content changes
+  useEffect(() => {
+    if (title || content) {
+      setSaveStatus('draft');
+    }
+  }, [title, content, bgColor, tags]);
+
+  const insertMarkdown = (before: string, after: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const newContent = 
+      content.substring(0, start) + 
+      before + 
+      selectedText + 
+      after + 
+      content.substring(end);
+    
+    setContent(newContent);
+    
+    // Set cursor position
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + before.length + selectedText.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -53,6 +92,7 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
     }
 
     setIsSaving(true);
+    setSaveStatus('saving');
     try {
       const tagsArray = tags
         .split(',')
@@ -66,9 +106,11 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
         tags: tagsArray.length > 0 ? tagsArray : undefined,
       });
 
+      setSaveStatus('saved');
       onClose();
     } catch (error) {
       console.error('Error saving note:', error);
+      setSaveStatus('draft');
     } finally {
       setIsSaving(false);
     }
@@ -80,11 +122,29 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
         "overflow-y-auto transition-all",
         isFullscreen 
           ? "max-w-[100vw] w-[100vw] h-[100vh] max-h-[100vh] rounded-none" 
-          : "sm:max-w-[600px] max-h-[90vh]"
+          : "sm:max-w-[700px] max-h-[90vh]"
       )}>
         <DialogHeader className="pr-10 sm:pr-12">
           <div className="flex items-center justify-between gap-1 sm:gap-2">
-            <DialogTitle className="text-base sm:text-lg md:text-xl flex-1 pr-1">{note ? 'Edit Note' : 'Create Note'}</DialogTitle>
+            <div className="flex items-center gap-3 flex-1">
+              <DialogTitle className="text-base sm:text-lg md:text-xl pr-1">{note ? 'Edit Note' : 'Create Note'}</DialogTitle>
+              {/* Save Status Indicator */}
+              <div className={cn(
+                "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full transition-colors",
+                saveStatus === 'saved' && "bg-green-500/10 text-green-700 dark:text-green-400",
+                saveStatus === 'saving' && "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+                saveStatus === 'draft' && "bg-muted text-muted-foreground"
+              )}>
+                {saveStatus === 'saved' && <Check className="w-3 h-3" />}
+                {saveStatus === 'saving' && <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+                {saveStatus === 'draft' && <FileEdit className="w-3 h-3" />}
+                <span className="font-medium">
+                  {saveStatus === 'saved' && 'Saved'}
+                  {saveStatus === 'saving' && 'Saving...'}
+                  {saveStatus === 'draft' && 'Draft'}
+                </span>
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -120,15 +180,112 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="content" className="text-sm font-medium">
-              Content
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="content" className="text-sm font-medium">
+                Content
+              </label>
+              {/* Word and Character Count */}
+              <div className="text-xs text-muted-foreground flex items-center gap-3">
+                <span>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
+                <span className="text-border">•</span>
+                <span>{charCount} {charCount === 1 ? 'character' : 'characters'}</span>
+              </div>
+            </div>
+
+            {/* Formatting Toolbar */}
+            <div className="flex flex-wrap gap-1 p-2 bg-muted/50 rounded-lg border border-border">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('**', '**')}
+                className="h-8 px-2.5"
+                title="Bold"
+              >
+                <Bold className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('*', '*')}
+                className="h-8 px-2.5"
+                title="Italic"
+              >
+                <Italic className="w-4 h-4" />
+              </Button>
+              <div className="w-px h-8 bg-border mx-1" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('# ', '')}
+                className="h-8 px-2.5"
+                title="Heading 1"
+              >
+                <Heading1 className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('## ', '')}
+                className="h-8 px-2.5"
+                title="Heading 2"
+              >
+                <Heading2 className="w-4 h-4" />
+              </Button>
+              <div className="w-px h-8 bg-border mx-1" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('- ', '')}
+                className="h-8 px-2.5"
+                title="Bullet List"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('1. ', '')}
+                className="h-8 px-2.5"
+                title="Numbered List"
+              >
+                <ListOrdered className="w-4 h-4" />
+              </Button>
+              <div className="w-px h-8 bg-border mx-1" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('`', '`')}
+                className="h-8 px-2.5"
+                title="Code"
+              >
+                <Code className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insertMarkdown('[', '](url)')}
+                className="h-8 px-2.5"
+                title="Link"
+              >
+                <Link className="w-4 h-4" />
+              </Button>
+            </div>
+
             <Textarea
+              ref={textareaRef}
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your note..."
-              className="min-h-[50dvh] text-sm sm:text-base resize-none font-mono whitespace-pre-wrap"
+              placeholder="Write your note... (Markdown supported)"
+              className="min-h-[40dvh] text-sm sm:text-base resize-none font-mono whitespace-pre-wrap"
               style={{ whiteSpace: 'pre-wrap' }}
             />
           </div>
@@ -147,19 +304,19 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Background Color</label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-7 gap-2">
               {colorOptions.map((color) => (
                 <button
                   key={color.value}
                   type="button"
                   onClick={() => setBgColor(color.value)}
-                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 transition-all ${
-                    color.class
-                  } ${
+                  className={cn(
+                    "aspect-square rounded-lg border-2 transition-all hover:scale-110",
+                    color.class,
                     bgColor === color.value
-                      ? 'border-primary scale-110'
-                      : 'border-border hover:scale-105'
-                  }`}
+                      ? "border-primary ring-2 ring-primary/20 scale-110"
+                      : "border-border"
+                  )}
                   title={color.label}
                 />
               ))}
