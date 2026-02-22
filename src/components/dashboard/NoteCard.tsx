@@ -133,7 +133,7 @@ export function NoteCard({
       </div>
 
       {/* Action buttons */}
-      <div className="absolute bottom-4 right-4 z-20 flex opacity-0 sm:opacity-0 sm:group-hover:opacity-100 items-center gap-1.5 transition-all duration-200">
+      <div className="absolute bottom-4 right-4 z-20 flex opacity-100 sm:opacity-0 sm:group-hover:opacity-100 items-center gap-1.5 transition-all duration-200">
         <Button
           variant="ghost"
           size="icon"

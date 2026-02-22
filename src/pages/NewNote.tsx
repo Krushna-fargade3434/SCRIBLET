@@ -1,11 +1,15 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Palette, Image as ImageIcon, X, Type, Bold, Italic, Underline, List } from 'lucide-react';
+import { ArrowLeft, Check, Palette, Image as ImageIcon, X, Type, Bold, Italic, Underline, List, Download, FileText } from 'lucide-react';
 import { useNotes, CreateNoteInput, Note } from '@/hooks/useNotes';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { cleanNoteContent, cleanNoteTitle, cleanTags } from '@/lib/cleanNoteContent';
+import { exportAsMarkdown, exportAsHTML, exportAsText, exportAsPDF } from '@/lib/exportUtils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
+import { RichTextEditor } from '@/components/RichTextEditor';
 
 const colorOptions = [
   { value: '#F8F9FA', label: 'Default', bg: 'bg-[#F8F9FA]' },
@@ -68,9 +72,60 @@ export default function NewNote() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showFormatPicker, setShowFormatPicker] = useState(false);
+  const [useRichEditor, setUseRichEditor] = useState(false);
 
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Export handler
+  const handleExport = async (format: 'markdown' | 'html' | 'text' | 'pdf') => {
+    if (!title.trim()) {
+      toast.error('Please add a title before exporting');
+      return;
+    }
+
+    // Get current content HTML from editor
+    const currentContent = useRichEditor ? content : (contentRef.current?.innerHTML || '');
+
+    const noteData: Note = {
+      id: id || '',
+      title,
+      content: currentContent,
+      bg_color: bgColor,
+      bg_image_url: bgImageUrl,
+      is_favorite: existingNote?.is_favorite || false,
+      is_pinned: existingNote?.is_pinned || false,
+      note_date: existingNote?.note_date,
+      user_id: existingNote?.user_id || '',
+      created_at: existingNote?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+    };
+
+    try {
+      switch (format) {
+        case 'markdown':
+          exportAsMarkdown(noteData);
+          toast.success('Exported as Markdown');
+          break;
+        case 'html':
+          exportAsHTML(noteData);
+          toast.success('Exported as HTML');
+          break;
+        case 'text':
+          exportAsText(noteData);
+          toast.success('Exported as Text');
+          break;
+        case 'pdf':
+          await exportAsPDF(noteData);
+          toast.success('Exported as PDF');
+          break;
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Export failed');
+    }
+  };
 
   // Auto-resize textarea function
   const autoResize = (element: HTMLTextAreaElement | null) => {
@@ -145,7 +200,9 @@ export default function NewNote() {
   useEffect(() => {
     if (existingNote && contentRef.current) {
       setTitle(cleanNoteTitle(existingNote.title || ''));
-      contentRef.current.innerHTML = cleanNoteContent(existingNote.content || '');
+      const cleanedContent = cleanNoteContent(existingNote.content || '');
+      setContent(cleanedContent);
+      contentRef.current.innerHTML = cleanedContent;
       setBgColor(existingNote.bg_color || '#F8F9FA');
       setBgImageUrl(existingNote.bg_image_url || undefined);
       setTags(cleanTags(existingNote.tags).join(', '));
@@ -155,7 +212,8 @@ export default function NewNote() {
   const handleSave = async () => {
     if (!title.trim()) return;
 
-    const contentHTML = contentRef.current?.innerHTML || '';
+    // Get current content HTML from editor
+    const contentHTML = useRichEditor ? content : (contentRef.current?.innerHTML || '');
     
     const data: CreateNoteInput = {
       title: title.trim(),
@@ -228,20 +286,44 @@ export default function NewNote() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="font-semibold text-base">{isEdit ? 'Edit Note' : 'Create Note'}</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSave}
-          disabled={!title.trim()}
-          className="h-10 w-10 text-primary"
-        >
-          <Check className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-10 w-10">
+                <Download className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('markdown')}>
+                Export as Markdown
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('html')}>
+                Export as HTML
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('text')}>
+                Export as Text
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSave}
+            disabled={!title.trim()}
+            className="h-10 w-10 text-primary"
+          >
+            <Check className="w-5 h-5" />
+          </Button>
+        </div>
       </motion.header>
 
       {/* Main Content */}
       <motion.div
-        className="flex-1 overflow-y-auto pb-32 md:pb-28"
+        className="flex-1 overflow-y-auto pb-48 md:pb-28"
         style={{
           backgroundColor: bgImageUrl ? '#FFFFFF' : bgColor,
         }}
@@ -284,22 +366,32 @@ export default function NewNote() {
           />
 
           {/* Content Input */}
-          <div
-            ref={contentRef}
-            contentEditable
-            onInput={(e) => setContent(e.currentTarget.textContent || '')}
-            data-placeholder="Write your note here..."
-            className="w-full bg-transparent border-none outline-none text-base text-foreground/90 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/40 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-3 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:my-2 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:my-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline"
-            style={{
-              minHeight: 'calc(100vh - 400px)',
-            }}
-          />
+          {useRichEditor ? (
+            <div className="bg-white/80 rounded-lg overflow-hidden">
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
+                placeholder="Write your note here..."
+              />
+            </div>
+          ) : (
+            <div
+              ref={contentRef}
+              contentEditable
+              onInput={(e) => setContent(e.currentTarget.innerHTML || '')}
+              data-placeholder="Write your note here..."
+              className="w-full bg-transparent border-none outline-none text-base text-foreground/90 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/40 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-3 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:my-2 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:my-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline"
+              style={{
+                minHeight: 'calc(100vh - 400px)',
+              }}
+            />
+          )}
         </div>
       </motion.div>
 
       {/* Bottom Action Sheet */}
       <motion.div
-        className="fixed bottom-0 left-0 right-0 z-30 pb-2"
+        className="fixed bottom-16 left-0 right-0 md:bottom-0 z-50 pb-2"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, type: 'spring', stiffness: 300, damping: 30 }}
@@ -465,102 +557,129 @@ export default function NewNote() {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Formatting Tools */}
-              <div className="flex gap-2 flex-wrap items-center">
-                {/* Text Styling */}
+              {/* Editor Mode Toggle */}
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Editor Mode:</span>
                 <button
                   type="button"
-                  onClick={() => applyFormat('bold')}
-                  className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                  title="Bold (Ctrl+B) - **text**"
+                  onClick={() => setUseRichEditor(!useRichEditor)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    useRichEditor
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
                 >
-                  <Bold className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyFormat('italic')}
-                  className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                  title="Italic (Ctrl+I) - *text*"
-                >
-                  <Italic className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyFormat('underline')}
-                  className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                  title="Underline - __text__"
-                >
-                  <Underline className="w-5 h-5" />
-                </button>
-
-                <div className="w-px h-6 bg-border mx-1" />
-
-                {/* Headings */}
-                <button
-                  type="button"
-                  onClick={() => applyFormat('heading1')}
-                  className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                  title="Heading 1 - # text"
-                >
-                  H1
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyFormat('heading2')}
-                  className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                  title="Heading 2 - ## text"
-                >
-                  H2
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyFormat('heading3')}
-                  className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                  title="Heading 3 - ### text"
-                >
-                  H3
-                </button>
-
-                <div className="w-px h-6 bg-border mx-1" />
-
-                {/* Lists */}
-                <button
-                  type="button"
-                  onClick={() => applyFormat('bullet')}
-                  className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                  title="Bullet list - • text"
-                >
-                  <List className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyFormat('number')}
-                  className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                  title="Numbered list - 1. text"
-                >
-                  <span className="text-sm font-medium">1.</span>
-                </button>
-
-                <div className="w-px h-6 bg-border mx-1" />
-
-                {/* Font Size */}
-                <button
-                  type="button"
-                  onClick={decreaseFontSize}
-                  className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                  title="Decrease font size"
-                >
-                  A-
-                </button>
-                <button
-                  type="button"
-                  onClick={increaseFontSize}
-                  className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                  title="Increase font size"
-                >
-                  A+
+                  {useRichEditor ? '✨ Rich Editor' : 'Simple Editor'}
                 </button>
               </div>
+
+              {!useRichEditor && (
+                <>
+                  {/* Formatting Tools - Only show in simple mode */}
+                  <div className="flex gap-2 flex-wrap items-center">
+                    {/* Text Styling */}
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('bold')}
+                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
+                      title="Bold (Ctrl+B) - **text**"
+                    >
+                      <Bold className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('italic')}
+                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
+                      title="Italic (Ctrl+I) - *text*"
+                    >
+                      <Italic className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('underline')}
+                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
+                      title="Underline - __text__"
+                    >
+                      <Underline className="w-5 h-5" />
+                    </button>
+
+                    <div className="w-px h-6 bg-border mx-1" />
+
+                    {/* Headings */}
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('heading1')}
+                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
+                      title="Heading 1 - # text"
+                    >
+                      H1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('heading2')}
+                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
+                      title="Heading 2 - ## text"
+                    >
+                      H2
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('heading3')}
+                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
+                      title="Heading 3 - ### text"
+                    >
+                      H3
+                    </button>
+
+                    <div className="w-px h-6 bg-border mx-1" />
+
+                    {/* Lists */}
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('bullet')}
+                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
+                      title="Bullet list - • text"
+                    >
+                      <List className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyFormat('number')}
+                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
+                      title="Numbered list - 1. text"
+                    >
+                      <span className="text-sm font-medium">1.</span>
+                    </button>
+
+                    <div className="w-px h-6 bg-border mx-1" />
+
+                    {/* Font Size */}
+                    <button
+                      type="button"
+                      onClick={decreaseFontSize}
+                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
+                      title="Decrease font size"
+                    >
+                      A-
+                    </button>
+                    <button
+                      type="button"
+                      onClick={increaseFontSize}
+                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
+                      title="Increase font size"
+                    >
+                      A+
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {useRichEditor && (
+                <div className="text-sm text-muted-foreground">
+                  Rich editor enabled with advanced formatting, tables, images, and more.
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

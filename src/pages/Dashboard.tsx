@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Search, FileText, Loader2, SlidersHorizontal, Grid3x3, List } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { NoteCard } from '@/components/dashboard/NoteCard';
+import { ViewModeSelector, ViewMode } from '@/components/ViewModeSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNotes } from '@/hooks/useNotes';
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('edited');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const navigate = useNavigate();
 
   const filters = [
@@ -95,6 +97,7 @@ export default function Dashboard() {
                   className="pl-10 h-11 bg-muted/50 border-border focus-visible:ring-primary"
                 />
               </div>
+              <ViewModeSelector mode={viewMode} onModeChange={setViewMode} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="shrink-0 h-11 w-11">
@@ -198,7 +201,12 @@ export default function Dashboard() {
             </motion.div>
           ) : (
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+              className={cn(
+                'grid gap-5',
+                viewMode === 'grid' 
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                  : 'grid-cols-1'
+              )}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -220,9 +228,9 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Floating Action Button */}
+        {/* Floating Action Button - Hidden on mobile, visible on desktop */}
         <motion.button
-          className="fab"
+          className="fab hidden md:flex"
           onClick={() => navigate('/dashboard/new')}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}

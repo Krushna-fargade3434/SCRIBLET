@@ -99,7 +99,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="px-3 py-6 flex-1">
+        <nav className="px-3 py-6">
           <ul className="space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -145,22 +145,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
             </button>
           </div>
-        </nav>
 
-        {/* User section */}
-        <div className="p-4 border-t border-sidebar-border mt-auto">
+          {/* User section */}
+          <div className="mt-6 pt-6 border-t border-sidebar-border">
           <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-sidebar-accent/50 group hover:bg-sidebar-accent transition-colors">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center shrink-0">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-primary/10 border-2 border-primary/20">
               <img 
                 src={profile?.avatar_url || '/profile.png'} 
                 alt="Profile" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  e.currentTarget.src = '/profile.png';
                 }}
               />
-              <User className="w-5 h-5 text-primary/60 hidden" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold truncate text-sidebar-foreground">
@@ -178,7 +175,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
-        </div>
+          </div>
+        </nav>
       </motion.aside>
     </>
   );

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { User, Mail, Calendar, Shield, Pencil, Info, Save, Moon, Sun, Monitor, UserCircle, Settings } from 'lucide-react';
+import { User, Mail, Calendar, Shield, Pencil, Info, Save, Moon, Sun, Monitor, UserCircle, Settings, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ImageCropDialog } from '@/components/ImageCropDialog';
 import { useState, useEffect } from 'react';
 import { APP_VERSION } from '@/lib/version';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,8 +18,9 @@ import { cn } from '@/lib/utils';
 export default function Profile() {
   const { user } = useAuth();
   const { notes } = useNotes();
-  const { profile, updateAvatar } = useProfile();
+  const { profile, updateAvatar, uploadAvatar } = useProfile();
   const [open, setOpen] = useState(false);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || '');
@@ -71,6 +73,10 @@ export default function Profile() {
     }
   };
 
+  const handleImageCropped = async (croppedImageBlob: Blob) => {
+    await uploadAvatar.mutateAsync(croppedImageBlob);
+  };
+
   const avatarOptions = [
     '/avatars/photo1.png',
     '/avatars/photo2.png',
@@ -87,7 +93,7 @@ export default function Profile() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 pb-20 md:pb-6">
         {/* Header */}
         <motion.div
           className="mb-6"
@@ -163,17 +169,15 @@ export default function Profile() {
               {/* Header section */}
               <div className="p-5 sm:p-8 bg-gradient-to-br from-primary/10 to-primary/5 border-b border-border">
                 <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden bg-card border-2 border-primary/20 flex items-center justify-center shadow-sm">
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-card border-4 border-primary/20 shadow-lg">
                     <img 
                       src={profile?.avatar_url || '/profile.png'} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        e.currentTarget.src = '/profile.png';
                       }}
                     />
-                    <User className="w-10 h-10 text-primary/60 hidden" />
                   </div>
                   <div className="flex-1">
                     {isEditing ? (
@@ -202,22 +206,55 @@ export default function Profile() {
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                          <DialogTitle>Select a profile avatar</DialogTitle>
+                          <DialogTitle>Choose Profile Photo</DialogTitle>
                         </DialogHeader>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto p-1">
-                          {avatarOptions.map((url) => (
-                            <button
-                              key={url}
-                              onClick={async () => {
-                                await updateAvatar.mutateAsync(url);
-                                setOpen(false);
-                              }}
-                              className="rounded-xl overflow-hidden border-2 border-border hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                              aria-label={`Choose avatar ${url}`}
-                            >
-                              <img src={url} alt="Avatar option" className="w-full h-16 sm:h-20 object-cover" />
-                            </button>
-                          ))}
+                        <div className="space-y-4">
+                          {/* Upload custom photo button */}
+                          <Button
+                            onClick={() => {
+                              setOpen(false);
+                              setCropDialogOpen(true);
+                            }}
+                            className="w-full h-14 text-base"
+                            variant="outline"
+                          >
+                            <Upload className="w-5 h-5 mr-2" />
+                            Upload Custom Photo
+                          </Button>
+                          
+                          {/* Divider */}
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-background px-2 text-muted-foreground">
+                                Or choose preset
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Preset avatars */}
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 max-h-[40vh] overflow-y-auto p-1">
+                            {avatarOptions.map((url) => (
+                              <button
+                                key={url}
+                                onClick={async () => {
+                                  await updateAvatar.mutateAsync(url);
+                                  setOpen(false);
+                                }}
+                                className="group relative aspect-square rounded-full overflow-hidden border-3 border-border hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all hover:scale-105"
+                                aria-label={`Choose avatar ${url}`}
+                              >
+                                <img 
+                                  src={url} 
+                                  alt="Avatar option" 
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -414,6 +451,13 @@ export default function Profile() {
           </motion.div>
         )}
       </div>
+
+      {/* Image Crop Dialog */}
+      <ImageCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        onImageCropped={handleImageCropped}
+      />
     </DashboardLayout>
   );
 }

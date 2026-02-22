@@ -31,7 +31,7 @@ export default function Favorites() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 md:pb-6">
         {/* Header */}
         <motion.div
           className="mb-8"
