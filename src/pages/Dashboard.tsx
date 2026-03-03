@@ -87,18 +87,19 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <div className="flex-1 max-w-2xl relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search notes by title, content, or tags..."
+                  placeholder="Search notes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-11 bg-muted/50 border-border focus-visible:ring-primary"
                 />
               </div>
-              <ViewModeSelector mode={viewMode} onModeChange={setViewMode} />
-              <DropdownMenu>
+              <div className="flex gap-2 shrink-0">
+                <ViewModeSelector mode={viewMode} onModeChange={setViewMode} />
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="shrink-0 h-11 w-11">
                     <SlidersHorizontal className="w-5 h-5" />
@@ -126,8 +127,7 @@ export default function Dashboard() {
                     Title (A-Z) {sortBy === 'title' && '✓'}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+              </DropdownMenu>              </div>            </div>
           </div>
         </motion.div>
 
@@ -202,7 +202,7 @@ export default function Dashboard() {
           ) : (
             <motion.div
               className={cn(
-                'grid gap-5',
+                'grid gap-4 sm:gap-5',
                 viewMode === 'grid' 
                   ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                   : 'grid-cols-1'

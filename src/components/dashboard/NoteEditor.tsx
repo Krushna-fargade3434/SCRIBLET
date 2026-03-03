@@ -62,6 +62,23 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
     }
   }, [title, content, bgColor, tags]);
 
+  // Handle mobile keyboard focus - ensure textarea is visible
+  useEffect(() => {
+    const handleFocus = () => {
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    };
+
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.addEventListener('focus', handleFocus);
+      return () => textarea.removeEventListener('focus', handleFocus);
+    }
+  }, [open]);
+
   const insertMarkdown = (before: string, after: string = '') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -285,7 +302,7 @@ export function NoteEditor({ note, open, onClose, onSave }: NoteEditorProps) {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write your note... (Markdown supported)"
-              className="min-h-[40dvh] text-sm sm:text-base resize-none font-mono whitespace-pre-wrap"
+              className="min-h-[35dvh] text-sm sm:text-base resize-none font-mono whitespace-pre-wrap"
               style={{ whiteSpace: 'pre-wrap' }}
             />
           </div>

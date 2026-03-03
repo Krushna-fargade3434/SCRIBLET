@@ -269,8 +269,39 @@ export default function NewNote() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [title, content, bgColor, bgImageUrl, tags, isEdit, existingNote]);
 
+  // Handle mobile keyboard focus - scroll content into view
+  useEffect(() => {
+    const handleFocus = () => {
+      // Small delay to let the keyboard fully open
+      setTimeout(() => {
+        if (contentRef.current) {
+          contentRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    };
+
+    const contentEl = contentRef.current;
+    const titleEl = titleRef.current;
+    
+    if (contentEl) {
+      contentEl.addEventListener('focus', handleFocus);
+    }
+    if (titleEl) {
+      titleEl.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      if (contentEl) {
+        contentEl.removeEventListener('focus', handleFocus);
+      }
+      if (titleEl) {
+        titleEl.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-background flex flex-col">
+    <div className="fixed inset-0 bg-background flex flex-col touch-pan-y">
       {/* Header */}
       <motion.header
         className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-card/50 backdrop-blur-sm z-20"
@@ -323,7 +354,7 @@ export default function NewNote() {
 
       {/* Main Content */}
       <motion.div
-        className="flex-1 overflow-y-auto pb-48 md:pb-28"
+        className="flex-1 overflow-y-auto pb-[220px] md:pb-28 overscroll-contain"
         style={{
           backgroundColor: bgImageUrl ? '#FFFFFF' : bgColor,
         }}
@@ -356,7 +387,7 @@ export default function NewNote() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Note title..."
-            className="w-full bg-transparent border-none outline-none resize-none text-3xl font-bold text-foreground placeholder:text-muted-foreground/40 mb-4 overflow-hidden"
+            className="w-full bg-transparent border-none outline-none resize-none text-3xl font-bold text-gray-900 placeholder:text-gray-500/60 mb-4 overflow-hidden touch-manipulation"
             rows={1}
             style={{
               minHeight: '44px',
@@ -380,9 +411,11 @@ export default function NewNote() {
               contentEditable
               onInput={(e) => setContent(e.currentTarget.innerHTML || '')}
               data-placeholder="Write your note here..."
-              className="w-full bg-transparent border-none outline-none text-base text-foreground/90 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/40 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-3 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:my-2 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:my-2 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline"
+              className="w-full bg-transparent border-none outline-none text-base text-gray-800 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500/60 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-3 [&_h1]:text-gray-900 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:my-2 [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:my-2 [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline touch-manipulation"
               style={{
-                minHeight: 'calc(100vh - 400px)',
+                minHeight: '300px',
+                WebkitUserSelect: 'text',
+                userSelect: 'text',
               }}
             />
           )}
@@ -391,12 +424,12 @@ export default function NewNote() {
 
       {/* Bottom Action Sheet */}
       <motion.div
-        className="fixed bottom-16 left-0 right-0 md:bottom-0 z-50 pb-2"
+        className="fixed bottom-16 left-0 right-0 md:bottom-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border/30"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <div className="px-4 py-4 flex items-center justify-center gap-6">
+        <div className="px-4 py-3 flex items-center justify-center gap-6">
           <motion.button
             type="button"
             onClick={() => {

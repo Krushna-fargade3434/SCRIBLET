@@ -203,6 +203,23 @@
     text-wrap: balance;
   }
 
+  /* Better word breaking for long emails and URLs */
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Responsive text scaling */
+  .text-responsive {
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
+  }
+
+  /* Safe area for mobile devices with notches */
+  .safe-area-inset {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
   /* Focus visible for better accessibility */
   .focus-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;

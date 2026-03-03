@@ -149,7 +149,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* User section */}
           <div className="mt-6 pt-6 border-t border-sidebar-border">
           <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-sidebar-accent/50 group hover:bg-sidebar-accent transition-colors">
-            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-primary/10 border-2 border-primary/20">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-primary/10 border-2 border-primary/20 shrink-0">
               <img 
                 src={profile?.avatar_url || '/profile.png'} 
                 alt="Profile" 
@@ -159,11 +159,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }}
               />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <p className="text-sm font-semibold truncate text-sidebar-foreground">
                 {user?.user_metadata?.full_name || 'User'}
               </p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              <p className="text-xs text-muted-foreground truncate break-all">{user?.email}</p>
             </div>
             <Button
               variant="ghost"

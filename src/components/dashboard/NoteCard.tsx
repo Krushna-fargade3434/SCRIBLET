@@ -60,7 +60,7 @@ export function NoteCard({
             }}
           />
           {/* Overlay for text readability - stronger gradient */}
-          <div className="absolute inset-0 z-0 bg-gradient-to-b from-white/70 via-white/80 to-white/90 dark:from-black/60 dark:via-black/70 dark:to-black/80" />
+          <div className="absolute inset-0 z-0 bg-gradient-to-b from-white/70 via-white/80 to-white/90" />
         </>
       )}
 
@@ -81,22 +81,22 @@ export function NoteCard({
       {/* Content */}
       <div className="relative z-10 flex-1 flex flex-col">
         {/* Title */}
-        <h3 className="font-semibold text-foreground line-clamp-2 mb-3 text-lg leading-tight pr-16">
+        <h3 className="font-semibold text-gray-900 line-clamp-2 mb-3 text-lg leading-tight pr-16">
           {cleanNoteTitle(note.title)}
         </h3>
 
         {/* Content preview */}
         {note.content && (
           <div 
-            className="text-[15px] leading-relaxed text-muted-foreground line-clamp-4 mb-4 flex-1 
-            [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-foreground
-            [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-foreground
-            [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-foreground
+            className="text-[15px] leading-relaxed text-gray-700 line-clamp-4 mb-4 flex-1 
+            [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-gray-900
+            [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-gray-900
+            [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-gray-900
             [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:my-2
             [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-2
             [&_li]:my-1
-            [&_b]:font-semibold [&_b]:text-foreground
-            [&_strong]:font-semibold [&_strong]:text-foreground
+            [&_b]:font-semibold [&_b]:text-gray-900
+            [&_strong]:font-semibold [&_strong]:text-gray-900
             [&_i]:italic [&_em]:italic
             [&_u]:underline
             [&_p]:my-1"
@@ -116,7 +116,7 @@ export function NoteCard({
               </span>
             ))}
             {cleanTags(note.tags).length > 3 && (
-              <span className="px-2 py-1 text-xs font-medium text-muted-foreground">
+              <span className="px-2 py-1 text-xs font-medium text-gray-600">
                 +{cleanTags(note.tags).length - 3}
               </span>
             )}
@@ -124,7 +124,7 @@ export function NoteCard({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/50 mt-auto">
+        <div className="flex items-center justify-between text-xs text-gray-600 pt-3 border-t border-gray-300/50 mt-auto">
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
             <span>{format(new Date(note.updated_at), 'MMM d, yyyy')}</span>
