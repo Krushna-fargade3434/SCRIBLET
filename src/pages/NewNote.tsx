@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, Palette, Image as ImageIcon, X, Type, Bold, Italic, Underline, List, Download, FileText } from 'lucide-react';
 import { useNotes, CreateNoteInput, Note } from '@/hooks/useNotes';
@@ -9,7 +9,6 @@ import { cleanNoteContent, cleanNoteTitle, cleanTags } from '@/lib/cleanNoteCont
 import { exportAsMarkdown, exportAsHTML, exportAsText, exportAsPDF } from '@/lib/exportUtils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { RichTextEditor } from '@/components/RichTextEditor';
 
 const colorOptions = [
   { value: '#F8F9FA', label: 'Default', bg: 'bg-[#F8F9FA]' },
@@ -30,6 +29,26 @@ const colorOptions = [
   { value: '#f5e8fa', label: 'Mauve', bg: 'bg-[#f5e8fa]' },
   { value: '#f5f0e8', label: 'Sand', bg: 'bg-[#f5f0e8]' },
   { value: '#e8f5fa', label: 'Aqua', bg: 'bg-[#e8f5fa]' },
+  { value: '#F5F7FA', label: 'Cloud', bg: 'bg-[#F5F7FA]' },
+{ value: '#EEF2F7', label: 'Mist', bg: 'bg-[#EEF2F7]' },
+{ value: '#EAF4F4', label: 'Ice', bg: 'bg-[#EAF4F4]' },
+{ value: '#F4F6ED', label: 'Olive Light', bg: 'bg-[#F4F6ED]' },
+{ value: '#F8F3EC', label: 'Ivory', bg: 'bg-[#F8F3EC]' },
+{ value: '#F1F5F9', label: 'Cool Gray', bg: 'bg-[#F1F5F9]' },
+{ value: '#E9F5FF', label: 'Soft Blue', bg: 'bg-[#E9F5FF]' },
+{ value: '#EAF7F1', label: 'Soft Mint', bg: 'bg-[#EAF7F1]' },
+{ value: '#FFF1F3', label: 'Blush', bg: 'bg-[#FFF1F3]' },
+{ value: '#F6F0FF', label: 'Soft Violet', bg: 'bg-[#F6F0FF]' },
+{ value: '#FFF7ED', label: 'Warm Sand', bg: 'bg-[#FFF7ED]' },
+{ value: '#ECFEFF', label: 'Light Cyan', bg: 'bg-[#ECFEFF]' },
+{ value: '#F0FDF4', label: 'Fresh Green', bg: 'bg-[#F0FDF4]' },
+{ value: '#FDF4FF', label: 'Light Orchid', bg: 'bg-[#FDF4FF]' },
+{ value: '#FFFDE7', label: 'Butter', bg: 'bg-[#FFFDE7]' },
+{ value: '#F3E8FF', label: 'Amethyst Light', bg: 'bg-[#F3E8FF]' },
+{ value: '#E6FFFA', label: 'Seafoam', bg: 'bg-[#E6FFFA]' },
+{ value: '#F0FFF4', label: 'Spring', bg: 'bg-[#F0FFF4]' },
+{ value: '#F9FAFB', label: 'Neutral Light', bg: 'bg-[#F9FAFB]' },
+{ value: '#EDF2F7', label: 'Steel', bg: 'bg-[#EDF2F7]' },
 ];
 
 const bgImages = [
@@ -72,7 +91,7 @@ export default function NewNote() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showFormatPicker, setShowFormatPicker] = useState(false);
-  const [useRichEditor, setUseRichEditor] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -85,7 +104,7 @@ export default function NewNote() {
     }
 
     // Get current content HTML from editor
-    const currentContent = useRichEditor ? content : (contentRef.current?.innerHTML || '');
+    const currentContent = contentRef.current?.innerHTML || '';
 
     const noteData: Note = {
       id: id || '',
@@ -209,11 +228,11 @@ export default function NewNote() {
     }
   }, [existingNote]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!title.trim()) return;
 
     // Get current content HTML from editor
-    const contentHTML = useRichEditor ? content : (contentRef.current?.innerHTML || '');
+    const contentHTML = contentRef.current?.innerHTML || '';
     
     const data: CreateNoteInput = {
       title: title.trim(),
@@ -232,7 +251,7 @@ export default function NewNote() {
       await createNote.mutateAsync(data);
     }
     navigate('/dashboard');
-  };
+  }, [title, bgColor, bgImageUrl, tags, isEdit, existingNote, updateNote, createNote, navigate]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -267,17 +286,16 @@ export default function NewNote() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [title, content, bgColor, bgImageUrl, tags, isEdit, existingNote]);
+  }, [title, content, bgColor, bgImageUrl, tags, isEdit, existingNote, handleSave, navigate]);
 
-  // Handle mobile keyboard focus - scroll content into view
+  // Handle mobile keyboard - keep scroll position stable
   useEffect(() => {
     const handleFocus = () => {
-      // Small delay to let the keyboard fully open
+      // Prevent auto-scroll, let user maintain their position
+      // Just ensure a small delay for keyboard to open
       setTimeout(() => {
-        if (contentRef.current) {
-          contentRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300);
+        // Do not force scroll - let browser handle naturally
+      }, 100);
     };
 
     const contentEl = contentRef.current;
@@ -296,6 +314,40 @@ export default function NewNote() {
       }
       if (titleEl) {
         titleEl.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, []);
+
+  // Detect keyboard visibility and height on mobile using visualViewport
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('visualViewport' in window)) return;
+
+    const updateKeyboardHeight = () => {
+      const visualViewport = window.visualViewport;
+      if (!visualViewport) return;
+
+      const windowHeight = window.innerHeight;
+      const viewportHeight = visualViewport.height;
+      const heightDiff = windowHeight - viewportHeight;
+
+      // If height difference is significant, keyboard is open
+      if (heightDiff > 150) {
+        setKeyboardHeight(heightDiff);
+      } else {
+        setKeyboardHeight(0);
+      }
+    };
+
+    const visualViewport = window.visualViewport;
+    if (visualViewport) {
+      visualViewport.addEventListener('resize', updateKeyboardHeight);
+      visualViewport.addEventListener('scroll', updateKeyboardHeight);
+    }
+
+    return () => {
+      if (visualViewport) {
+        visualViewport.removeEventListener('resize', updateKeyboardHeight);
+        visualViewport.removeEventListener('scroll', updateKeyboardHeight);
       }
     };
   }, []);
@@ -354,7 +406,7 @@ export default function NewNote() {
 
       {/* Main Content */}
       <motion.div
-        className="flex-1 overflow-y-auto pb-[220px] md:pb-28 overscroll-contain"
+        className="flex-1 overflow-y-auto pb-[280px] md:pb-28 overscroll-contain scroll-smooth"
         style={{
           backgroundColor: bgImageUrl ? '#FFFFFF' : bgColor,
         }}
@@ -397,34 +449,29 @@ export default function NewNote() {
           />
 
           {/* Content Input */}
-          {useRichEditor ? (
-            <div className="bg-white/80 rounded-lg overflow-hidden">
-              <RichTextEditor
-                content={content}
-                onChange={setContent}
-                placeholder="Write your note here..."
-              />
-            </div>
-          ) : (
-            <div
-              ref={contentRef}
-              contentEditable
-              onInput={(e) => setContent(e.currentTarget.innerHTML || '')}
-              data-placeholder="Write your note here..."
-              className="w-full bg-transparent border-none outline-none text-base text-gray-800 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500/60 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-3 [&_h1]:text-gray-900 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:my-2 [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:my-2 [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline touch-manipulation"
-              style={{
-                minHeight: '300px',
-                WebkitUserSelect: 'text',
-                userSelect: 'text',
-              }}
-            />
-          )}
+          <div
+            ref={contentRef}
+            contentEditable
+            onInput={(e) => setContent(e.currentTarget.innerHTML || '')}
+            data-placeholder="Write your note here..."
+            className="w-full bg-transparent border-none outline-none text-base text-gray-800 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500/60 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-3 [&_h1]:text-gray-900 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:my-2 [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:my-2 [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:my-1 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline touch-manipulation"
+            style={{
+              minHeight: '300px',
+              WebkitUserSelect: 'text',
+              userSelect: 'text',
+            }}
+          />
         </div>
       </motion.div>
 
-      {/* Bottom Action Sheet */}
+      {/* Bottom Action Sheet - moves up when keyboard is open */}
       <motion.div
-        className="fixed bottom-16 left-0 right-0 md:bottom-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border/30"
+        className="fixed left-0 right-0 z-50 bg-transparent transition-all duration-300"
+        style={{
+          bottom: keyboardHeight > 0 
+            ? `${keyboardHeight}px` 
+            : '4rem' // 64px for BottomNav on mobile, 0 on desktop
+        }}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, type: 'spring', stiffness: 300, damping: 30 }}
@@ -495,7 +542,7 @@ export default function NewNote() {
         <AnimatePresence>
           {showColorPicker && (
             <motion.div
-              className="px-4 pb-4 pt-2 bg-background/50 backdrop-blur-sm"
+              className="px-4 pb-4 pt-2"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -533,7 +580,7 @@ export default function NewNote() {
         <AnimatePresence>
           {showImagePicker && (
             <motion.div
-              className="px-4 pb-4 pt-2 bg-background/50 backdrop-blur-sm"
+              className="px-4 pb-4 pt-2"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -584,114 +631,95 @@ export default function NewNote() {
         <AnimatePresence>
           {showFormatPicker && (
             <motion.div
-              className="px-4 pb-4 pt-2 bg-background/50 backdrop-blur-sm"
+              className="px-4 pb-4 pt-2"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Editor Mode Toggle */}
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Editor Mode:</span>
-                <button
-                  type="button"
-                  onClick={() => setUseRichEditor(!useRichEditor)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                    useRichEditor
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  )}
-                >
-                  {useRichEditor ? '✨ Rich Editor' : 'Simple Editor'}
-                </button>
-              </div>
-
-              {!useRichEditor && (
-                <>
-                  {/* Formatting Tools - Only show in simple mode */}
-                  <div className="flex gap-2 flex-wrap items-center">
+              {/* Formatting Tools */}
+              <div className="flex gap-2 flex-wrap items-center justify-center">
                     {/* Text Styling */}
                     <button
                       type="button"
                       onClick={() => applyFormat('bold')}
-                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                      title="Bold (Ctrl+B) - **text**"
+                      className="p-2.5 md:p-2 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 shadow-sm touch-manipulation"
+                      title="Bold (Ctrl+B)"
                     >
                       <Bold className="w-5 h-5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => applyFormat('italic')}
-                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                      title="Italic (Ctrl+I) - *text*"
+                      className="p-2.5 md:p-2 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 shadow-sm touch-manipulation"
+                      title="Italic (Ctrl+I)"
                     >
                       <Italic className="w-5 h-5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => applyFormat('underline')}
-                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                      title="Underline - __text__"
+                      className="p-2.5 md:p-2 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 shadow-sm touch-manipulation"
+                      title="Underline (Ctrl+U)"
                     >
                       <Underline className="w-5 h-5" />
                     </button>
 
-                    <div className="w-px h-6 bg-border mx-1" />
+                    <div className="w-px h-6 bg-border/50 mx-1" />
 
                     {/* Headings */}
                     <button
                       type="button"
                       onClick={() => applyFormat('heading1')}
-                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                      title="Heading 1 - # text"
+                      className="px-3 py-2 md:px-2 md:py-1 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 text-sm font-bold shadow-sm touch-manipulation"
+                      title="Heading 1"
                     >
                       H1
                     </button>
                     <button
                       type="button"
                       onClick={() => applyFormat('heading2')}
-                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                      title="Heading 2 - ## text"
+                      className="px-3 py-2 md:px-2 md:py-1 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 text-sm font-bold shadow-sm touch-manipulation"
+                      title="Heading 2"
                     >
                       H2
                     </button>
                     <button
                       type="button"
                       onClick={() => applyFormat('heading3')}
-                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
-                      title="Heading 3 - ### text"
+                      className="px-3 py-2 md:px-2 md:py-1 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 text-sm font-bold shadow-sm touch-manipulation"
+                      title="Heading 3"
                     >
                       H3
                     </button>
 
-                    <div className="w-px h-6 bg-border mx-1" />
+                    <div className="w-px h-6 bg-border/50 mx-1" />
 
                     {/* Lists */}
                     <button
                       type="button"
                       onClick={() => applyFormat('bullet')}
-                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                      title="Bullet list - • text"
+                      className="p-2.5 md:p-2 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 shadow-sm touch-manipulation"
+                      title="Bullet list"
                     >
                       <List className="w-5 h-5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => applyFormat('number')}
-                      className="p-2 rounded bg-background hover:bg-muted transition-colors active:scale-95"
-                      title="Numbered list - 1. text"
+                      className="p-2.5 md:p-2 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 shadow-sm touch-manipulation"
+                      title="Numbered list"
                     >
                       <span className="text-sm font-medium">1.</span>
                     </button>
 
-                    <div className="w-px h-6 bg-border mx-1" />
+                    <div className="w-px h-6 bg-border/50 mx-1" />
 
                     {/* Font Size */}
                     <button
                       type="button"
                       onClick={decreaseFontSize}
-                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
+                      className="px-3 py-2 md:px-2 md:py-1 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 text-sm font-bold shadow-sm touch-manipulation"
                       title="Decrease font size"
                     >
                       A-
@@ -699,20 +727,12 @@ export default function NewNote() {
                     <button
                       type="button"
                       onClick={increaseFontSize}
-                      className="px-2 py-1 rounded bg-background hover:bg-muted transition-colors active:scale-95 text-sm font-bold"
+                      className="px-3 py-2 md:px-2 md:py-1 rounded-lg bg-white/60 hover:bg-white transition-all active:scale-95 text-sm font-bold shadow-sm touch-manipulation"
                       title="Increase font size"
                     >
                       A+
                     </button>
                   </div>
-                </>
-              )}
-
-              {useRichEditor && (
-                <div className="text-sm text-muted-foreground">
-                  Rich editor enabled with advanced formatting, tables, images, and more.
-                </div>
-              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -229,6 +229,13 @@
   .skeleton {
     @apply animate-pulse bg-muted rounded;
   }
+
+  /* Ensure smooth scrolling */
+  @media (max-width: 768px) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
 }
 
 @keyframes float {
